@@ -30,7 +30,8 @@ class ANNRegressor(BaseEstimator, RegressorMixin):
         adam = Adam(learning_rate=self.learning_rate)
         model.compile(loss='mean_squared_error', optimizer=adam)
 
-        self.history = model.fit(X, y, epochs=100, batch_size=10, verbose=0, validation_split=0.1)
+        es = EarlyStopping(monitor='val_loss', patience=20)
+        self.history = model.fit(X, y, epochs=100, batch_size=10, verbose=0, callbacks=[es], validation_split=0.1)
 
         self.model = model
         return self
@@ -47,6 +48,7 @@ class ANNRegressor(BaseEstimator, RegressorMixin):
         return self
 
 
+# TODO states, memory and join with regular nn
 class LSTMRegressor(BaseEstimator, RegressorMixin):
     # TODO automatic feature creation
     # X_pd = pd.DataFrame(X)

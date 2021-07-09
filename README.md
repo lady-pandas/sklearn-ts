@@ -48,18 +48,17 @@ results = check_model(
 
 | Model family | Model | Univariate |
 | ------------- |:-------------:| -----:|
-| Neural networks | ANN | 1 |
-| Neural networks | LSTM | 1 |
-| Neural networks | TCN | 1 |
+| Neural networks | ANN |  |
+| Neural networks | LSTM |  |
+| Neural networks | TCN |  |
 
 # Documentation
-Tutorial notebook preparation in progress.
+Tutorial notebooks:
+- [neural networks](https://colab.research.google.com/drive/1wSZPydSkIoGYh9VANgP_wTQe-wrhzY1w#scrollTo=_W2QP0dhCKFV)
 
 # Development roadmap
-- New repo
-- Remove old deploy from test
-- Pypi
 - Exploding MAPE
 - Handling many observations per date
 - Constant window for forecasting
 - Tutorial notebooks
+- Image not included
