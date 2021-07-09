@@ -1,0 +1,7 @@
+numpy
+pandas
+matplotlib
+sklearn
+scikit-learn
+setuptools
+keras
