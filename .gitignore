@@ -2,3 +2,4 @@
 dist/
 build/
 *.bat
+/sklearn_ts.egg-info/

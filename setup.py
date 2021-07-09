@@ -5,7 +5,7 @@ from setuptools import find_packages
 setup(
     name='sklearn-ts',
     packages=find_packages(),
-    version='0.10.4',
+    version='0.10.5',
     description='Package for time series forecasting',
     long_description=open("README.md", "r", encoding="utf-8").read(),
     long_description_content_type="text/markdown",
