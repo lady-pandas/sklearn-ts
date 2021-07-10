@@ -11,11 +11,28 @@ from sklearn.preprocessing import FunctionTransformer
 from sklearn_ts.splitter import split, separate_data, custom_split
 
 
-# If sklearn version without it
-def mean_absolute_percentage_error(y_true, y_pred):
+def mean_absolute_percentage_error(y_true, y_pred, zeros_strategy='mae'):
+    """
+    Similar to sklearn https://scikit-learn.org/stable/modules/generated/sklearn.metrics.mean_absolute_error.html
+    with options for behaviour for around zeros
+    :param y_true:
+    :param y_pred:
+    :param zeros_strategy:
+    :return:
+    """
     epsilon = np.finfo(np.float64).eps
-    mape = np.abs(y_pred - y_true) / np.maximum(np.abs(y_true), epsilon)
-    return np.mean(mape)
+    if zeros_strategy == 'epsilon':
+        ape = np.abs(y_pred - y_true) / np.maximum(np.abs(y_true), epsilon)
+    elif zeros_strategy == 'mae':
+        ae = np.abs(y_pred - y_true)
+        ape = ae / np.maximum(np.abs(y_true), epsilon)
+        # When true values are very small, we take MAE
+        small_y_mask = y_true < epsilon
+        ape = np.where(small_y_mask, ae, ape)
+    else:
+        raise ValueError(f'Undefined zeros_strategy {zeros_strategy}')
+
+    return np.mean(ape)
 
 
 def plot_results(plotting, train, test, X_dummies_train, target, gs, model, model_name, i, mae_test):
@@ -106,7 +123,7 @@ def check_model(regressor, params, dataset,
     # categorical_transformer = OneHotEncoder(handle_unknown='ignore')
     preprocessor = ColumnTransformer(
         transformers=[('num', FunctionTransformer(), list(X_dummies.columns))] +
-        [(ut[0], ut[1], list(X_dummies.columns)) for ut in user_transformers]
+                     [(ut[0], ut[1], list(X_dummies.columns)) for ut in user_transformers]
     )
     pipeline = Pipeline(steps=[('preprocessor', preprocessor), ('regressor', regressor)])
     # rename params:

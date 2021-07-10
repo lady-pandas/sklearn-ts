@@ -1,15 +1,15 @@
 import unittest
 
+from sklearn.linear_model import LinearRegression
+from sklearn.preprocessing import MinMaxScaler
 from sklearn.svm import SVR
 
 from sklearn_ts.datasets.covid import load_covid
-from sklearn.linear_model import LinearRegression
-from sklearn.preprocessing import MinMaxScaler
-
 from sklearn_ts.validator import check_model
 
 
 class ValidatorTestCase(unittest.TestCase):
+
     def test_regression(self):
         dataset = load_covid()['dataset']
         dataset['month'] = dataset['date'].dt.month

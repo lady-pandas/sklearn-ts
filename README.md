@@ -57,8 +57,8 @@ Tutorial notebooks:
 - [neural networks](https://colab.research.google.com/drive/1wSZPydSkIoGYh9VANgP_wTQe-wrhzY1w#scrollTo=_W2QP0dhCKFV)
 
 # Development roadmap
-- Exploding MAPE
 - Handling many observations per date
 - Constant window for forecasting
-- Tutorial notebooks
 - Image not included
+- For NN - chart of how it learned
+- Logging
