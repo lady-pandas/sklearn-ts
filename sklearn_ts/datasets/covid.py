@@ -7,9 +7,12 @@ def load_covid():
     target = 'new_cases'
     date = 'date'
 
-    dataset = covid[(covid['location']=='World')].copy()[[target, date]]
+    dataset = covid[(covid['location'] == 'World')].copy()[[target, date]]
     dataset[date] = pd.to_datetime(dataset[date])
     dataset.index = dataset[date]
+
+    dataset['month'] = dataset['date'].dt.month
+    dataset = dataset.drop(columns=['date'])
 
     return {
         'target': target,

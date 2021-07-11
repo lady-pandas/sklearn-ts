@@ -1,9 +1,12 @@
+import math
+
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
+
 from sklearn.compose import ColumnTransformer
-from sklearn.metrics import make_scorer
+from sklearn.metrics import make_scorer, mean_absolute_error, mean_squared_error
 from sklearn.model_selection import GridSearchCV
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import FunctionTransformer
@@ -38,54 +41,75 @@ def mean_absolute_percentage_error(y_true, y_pred, zeros_strategy='mae'):
 def plot_results(plotting, train, test, X_dummies_train, target, gs, model, model_name, i, mae_test):
     if plotting:
         print('Plot')
+        # Features
+        # TODO SHAP
+        # no_features_imp = [
+        #     'SVR', 'ExpSmoothingRegressor', 'NaiveRegressor',
+        #     'MLPRegressor', 'ANNRegressor', 'LSTMRegressor', 'TCNRegressor'
+        # ]
+        # if model_name not in no_features_imp:
+        #     if model_name == "LinearRegression":
+        #         impact = model.named_steps['regressor'].coef_
+        #     else:
+        #         impact = model.named_steps['regressor'].feature_importances_
+        #
+        #     # not_dummies = [i for el in model.named_steps['preprocessor'].transformers_
+        #     # if hasattr(el[1], 'get_feature_names') for i in el[1].get_feature_names()]
+        #     features_df = pd.DataFrame({
+        #         'impact': impact,
+        #         'feature': list(X_dummies_train.columns),
+        #     })
+        #
+        #     fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(20, 12))
+        #     features_df.sort_values('impact', ascending=True).plot.barh(x='feature', y='impact', ax=ax)
+        #     fig.tight_layout(pad=4.0)
+        #     fig.savefig(f'{model_name}_features.png')
+
 
         fig, axes = plt.subplots(nrows=2, ncols=2, figsize=(20, 12))
 
         # CV errors
         pred_cv_features = [f'pred_cv_{j}' for j in range(i)]
         mae_cv = abs(gs.best_score_)
-        subset_cv = train.loc[train['pred_cv'].notnull(), ['date', target] + pred_cv_features]
-        subset_cv.plot(x='date', y=[target] + pred_cv_features,
+        subset_cv = train.loc[train['pred_cv'].notnull(), [target] + pred_cv_features]
+        subset_cv.plot(y=[target] + pred_cv_features,
                        title='CV MAPE: {0:.0%}'.format(mae_cv), ax=axes[0][0])
 
         # Train errors:
         train['pred'] = model.predict(X_dummies_train)
-        if hasattr(model.named_steps["regressor"], 'predictions'):
-            train['pi_lower'] = model.named_steps["regressor"].predictions['pi_lower']
-        else:
-            train['pi_lower'] = None
         mae = mean_absolute_percentage_error(train[target], train['pred'])
-        subset_train = train[['date', target, 'pred', 'pi_lower']]
-        subset_train.plot(x='date', y=[target, 'pred', 'pi_lower'],
+        subset_train = train[[target, 'pred']]
+        subset_train.plot(y=[target, 'pred'],
                           title='Train MAPE: {0:.0%}'.format(mae), ax=axes[0][1])
 
-        # Test errors
-        subset_test = test[['date', target, 'pred']]
-        subset_test.plot(x='date', y=[target, 'pred'],
+        # Test errors zoomed
+        subset_test = test[[target, 'pred', 'pi_lower', 'pi_upper']]
+        subset_test.plot(y=[target, 'pred', 'pi_lower', 'pi_upper'],
                          title='Testing MAPE: {0:.0%}'.format(mae_test), ax=axes[1][0])
 
-        # Features
-        # TODO SHAP
-        no_features_imp = [
-            'SVR', 'ExpSmoothingRegressor',
-            'MLPRegressor', 'ANNRegressor', 'LSTMRegressor', 'TCNRegressor'
-        ]
-        if model_name not in no_features_imp:
-            if model_name == "LinearRegression":
-                impact = model.named_steps['regressor'].coef_
-            else:
-                impact = model.named_steps['regressor'].feature_importances_
+        # Test errors
+        rejoined = subset_train.rename(columns={target: 'train'})[['train']].join(
+            subset_test.rename(columns={target: 'test'})[['test', 'pred', 'pi_lower', 'pi_upper']], how='outer')
+        rejoined.plot(y=['train', 'pred', 'test'],
+                      title='Testing MAPE: {0:.0%}'.format(mae_test), ax=axes[1][1])
 
-            # not_dummies = [i for el in model.named_steps['preprocessor'].transformers_
-            # if hasattr(el[1], 'get_feature_names') for i in el[1].get_feature_names()]
-            features_df = pd.DataFrame({
-                'impact': impact,
-                'feature': list(X_dummies_train.columns),
-            })
-            features_df.sort_values('impact', ascending=True).plot.barh(x='feature', y='impact', ax=axes[1][1])
+        for ax_sub in axes:
+            for ax in ax_sub:
+                ax.spines['top'].set_visible(False)
+                ax.spines['right'].set_visible(False)
 
         fig.tight_layout(pad=4.0)
         fig.savefig(f'{model_name}.png')
+
+        # fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(20, 12))
+        # rejoined.plot(y=['train', 'pred', 'test', 'pi_lower', 'pi_upper'],
+        #               title='Testing MAPE: {0:.0%}'.format(mae_test), ax=ax)
+        # ax.spines['top'].set_visible(False)
+        # ax.spines['right'].set_visible(False)
+        # fig.tight_layout(pad=4.0)
+        # fig.savefig(f'{model_name}_prediction.png')
+
+        return rejoined
 
 
 # noinspection PyDefaultArgument
@@ -159,19 +183,31 @@ def check_model(regressor, params, dataset,
 
     # check performance on test dataset
     test['pred'] = model.predict(X_dummies_test)
-    mae_test = mean_absolute_percentage_error(test[target], test['pred'])
+    if hasattr(model.named_steps["regressor"], 'predictions'):
+        test['pi_lower'] = model.named_steps["regressor"].predictions['pi_lower']
+        test['pi_upper'] = model.named_steps["regressor"].predictions['pi_upper']
+    else:
+        test['pi_lower'] = None
+        test['pi_upper'] = None
+
+    mape_test = mean_absolute_percentage_error(test[target], test['pred'])
+    mae_test = mean_absolute_error(test[target], test['pred'])
+    rmse_test = math.sqrt(mean_squared_error(test[target], test['pred']))
 
     model_name = type(model.named_steps["regressor"]).__name__
-    plot_results(plotting, train, test, X_dummies_train, target, gs, model, model_name, i, mae_test)
+    rejoined = plot_results(plotting, train, test, X_dummies_train, target, gs, model, model_name, i, mape_test)
 
     # TODO remove regressor_ from best_params
 
     return {
         'model_name': type(pipeline.named_steps["regressor"]).__name__,
         'model': model,
-        'mae_cv': abs(gs.best_score_),
+        'mape_cv': abs(gs.best_score_),
         'std_cv': pd.DataFrame(gs.cv_results_).sort_values('rank_test_score')['std_test_score'].values[0],
-        'mae_test': mae_test,
+        'performance_test': {'MAE': mae_test, 'MAPE': mape_test, 'RMSE': rmse_test},
         'best_params': gs.best_params_,
-        'cv_results': pd.DataFrame(gs.cv_results_)
+        'cv_results': pd.DataFrame(gs.cv_results_),
+        'rejoined': rejoined,
     }
+
+

@@ -5,3 +5,6 @@ sklearn
 scikit-learn
 setuptools
 keras
+
+statsmodels
+tensorflow

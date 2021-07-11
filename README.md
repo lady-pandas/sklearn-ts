@@ -57,9 +57,27 @@ Tutorial notebooks:
 - [neural networks](https://colab.research.google.com/drive/1wSZPydSkIoGYh9VANgP_wTQe-wrhzY1w#scrollTo=_W2QP0dhCKFV)
 
 # Development roadmap
-- Tricks tutorial
+- usunąć printy
+- instrukcja
+- prerequisites
+- Outliers
+- Transform plots
+- High level summary 
 - Handling many observations per date
 - Constant window for forecasting
 - Image not included
 - For NN - chart of how it learned
 - Logging
+- Read the docs
+- CRISP
+- SHAP
+- prod
+- save picture optioal
+- not only mae
+- single or collective
+- memes
+- area plot
+- feature importances
+- watermark
+- spójnie - intuicja, wzory
+- ARIMA odpowiedniki e Exp
