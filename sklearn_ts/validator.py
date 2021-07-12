@@ -40,32 +40,6 @@ def mean_absolute_percentage_error(y_true, y_pred, zeros_strategy='mae'):
 
 def plot_results(plotting, train, test, X_dummies_train, target, gs, model, model_name, i, mae_test):
     if plotting:
-        print('Plot')
-        # Features
-        # TODO SHAP
-        # no_features_imp = [
-        #     'SVR', 'ExpSmoothingRegressor', 'NaiveRegressor',
-        #     'MLPRegressor', 'ANNRegressor', 'LSTMRegressor', 'TCNRegressor'
-        # ]
-        # if model_name not in no_features_imp:
-        #     if model_name == "LinearRegression":
-        #         impact = model.named_steps['regressor'].coef_
-        #     else:
-        #         impact = model.named_steps['regressor'].feature_importances_
-        #
-        #     # not_dummies = [i for el in model.named_steps['preprocessor'].transformers_
-        #     # if hasattr(el[1], 'get_feature_names') for i in el[1].get_feature_names()]
-        #     features_df = pd.DataFrame({
-        #         'impact': impact,
-        #         'feature': list(X_dummies_train.columns),
-        #     })
-        #
-        #     fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(20, 12))
-        #     features_df.sort_values('impact', ascending=True).plot.barh(x='feature', y='impact', ax=ax)
-        #     fig.tight_layout(pad=4.0)
-        #     fig.savefig(f'{model_name}_features.png')
-
-
         fig, axes = plt.subplots(nrows=2, ncols=2, figsize=(20, 12))
 
         # CV errors
@@ -155,7 +129,7 @@ def check_model(regressor, params, dataset,
 
     # search parameters space
     # TODO change to log
-    print('Grid search')
+    # print('Grid search')
     gs = GridSearchCV(
         estimator=pipeline,
         param_grid=params,
@@ -178,7 +152,7 @@ def check_model(regressor, params, dataset,
         i += 1
 
     # fit model to train
-    print('Fitting to train')
+    # print('Fitting to train')
     model.fit(X_dummies_train, y_train)
 
     # check performance on test dataset
@@ -208,6 +182,5 @@ def check_model(regressor, params, dataset,
         'best_params': gs.best_params_,
         'cv_results': pd.DataFrame(gs.cv_results_),
         'rejoined': rejoined,
+        'features': list(X_dummies.columns),
     }
-
-

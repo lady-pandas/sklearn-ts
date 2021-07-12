@@ -57,6 +57,19 @@ Tutorial notebooks:
 - [neural networks](https://colab.research.google.com/drive/1wSZPydSkIoGYh9VANgP_wTQe-wrhzY1w#scrollTo=_W2QP0dhCKFV)
 
 # Development roadmap
+- FEATURES
+  
+
+- autoregressive generate
+- prophet features handling
+- model + forecast
+- x13
+- prettier plot
+- feature importance prophet
+- wtorek - czy działa
+- alfabet
+- exp b -> r
+- huge past
 - usunąć printy
 - instrukcja
 - prerequisites
@@ -81,3 +94,5 @@ Tutorial notebooks:
 - watermark
 - spójnie - intuicja, wzory
 - ARIMA odpowiedniki e Exp
+- exp big letters
+
