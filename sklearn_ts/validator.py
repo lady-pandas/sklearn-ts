@@ -65,10 +65,13 @@ def plot_results(plotting, train, test, X_dummies_train, target, gs, model, mode
         is_normal = normality(train['error'][train['error'].notnull()].astype(float))['normal'].iloc[0]
         train['error'].plot.hist(ax=axes[0][1], title=f'{is_normal}')
 
+
         # Test errors zoomed
         subset_test = test[[target, 'pred', 'pi_lower', 'pi_upper']]
-        subset_test.plot(y=[target, 'pred', 'pi_lower', 'pi_upper'],
+        subset_test.plot(y=[target, 'pred'],
                          title='Testing MAPE: {0:.0%}'.format(mape_test), ax=axes[1][0])
+        (axes[1][0]).fill_between(x=test.index, y1=test['pi_lower'],
+                         y2=test['pi_upper'], zorder=3, color='grey', alpha=0.2)
 
         # Test errors
         rejoined = subset_train.rename(columns={target: 'train'})[['train']].join(
