@@ -3,10 +3,10 @@ from sklearn.base import BaseEstimator, RegressorMixin
 from fbprophet.utilities import regressor_coefficients
 import pandas as pd
 
-from sklearn_ts.models.base import TimeSeriesRegressor
+from sklearn_ts.models.base import TimeSeriesModel
 
 
-class ProphetRegressor(BaseEstimator, RegressorMixin, TimeSeriesRegressor):
+class ProphetModel(BaseEstimator, RegressorMixin, TimeSeriesModel):
     # https://facebook.github.io/prophet/docs/quick_start.html#python-api
 
     def __init__(self, target='new_cases', features=['date'], regressors=[], **kwargs):

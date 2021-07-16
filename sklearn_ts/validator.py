@@ -3,7 +3,7 @@ import math
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-
+from pingouin import normality
 
 from sklearn.compose import ColumnTransformer
 from sklearn.metrics import make_scorer, mean_absolute_error, mean_squared_error
@@ -12,6 +12,11 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import FunctionTransformer
 
 from sklearn_ts.splitter import split, separate_data, custom_split
+
+
+def pi_coverage(y_true, predictions):
+    within_pi = (y_true.values >= predictions['pi_lower']) & (y_true.values <= predictions['pi_upper'])
+    return sum(within_pi) / len(y_true)
 
 
 def mean_absolute_percentage_error(y_true, y_pred, zeros_strategy='mae'):
@@ -38,7 +43,7 @@ def mean_absolute_percentage_error(y_true, y_pred, zeros_strategy='mae'):
     return np.mean(ape)
 
 
-def plot_results(plotting, train, test, X_dummies_train, target, gs, model, model_name, i, mae_test):
+def plot_results(plotting, train, test, X_dummies_train, target, gs, model, model_name, i, mape_test):
     if plotting:
         fig, axes = plt.subplots(nrows=2, ncols=2, figsize=(20, 12))
 
@@ -53,19 +58,23 @@ def plot_results(plotting, train, test, X_dummies_train, target, gs, model, mode
         train['pred'] = model.predict(X_dummies_train)
         mae = mean_absolute_percentage_error(train[target], train['pred'])
         subset_train = train[[target, 'pred']]
-        subset_train.plot(y=[target, 'pred'],
-                          title='Train MAPE: {0:.0%}'.format(mae), ax=axes[0][1])
+        # subset_train.plot(y=[target, 'pred'],
+        #                   title='Train MAPE: {0:.0%}'.format(mae), ax=axes[0][1])
+        train['error'] = train[target] - train['pred_cv']
+
+        is_normal = normality(train['error'][train['error'].notnull()].astype(float))['normal'].iloc[0]
+        train['error'].plot.hist(ax=axes[0][1], title=f'{is_normal}')
 
         # Test errors zoomed
         subset_test = test[[target, 'pred', 'pi_lower', 'pi_upper']]
         subset_test.plot(y=[target, 'pred', 'pi_lower', 'pi_upper'],
-                         title='Testing MAPE: {0:.0%}'.format(mae_test), ax=axes[1][0])
+                         title='Testing MAPE: {0:.0%}'.format(mape_test), ax=axes[1][0])
 
         # Test errors
         rejoined = subset_train.rename(columns={target: 'train'})[['train']].join(
             subset_test.rename(columns={target: 'test'})[['test', 'pred', 'pi_lower', 'pi_upper']], how='outer')
         rejoined.plot(y=['train', 'pred', 'test'],
-                      title='Testing MAPE: {0:.0%}'.format(mae_test), ax=axes[1][1])
+                      title='Testing MAPE: {0:.0%}'.format(mape_test), ax=axes[1][1])
 
         for ax_sub in axes:
             for ax in ax_sub:
@@ -143,23 +152,51 @@ def check_model(regressor, params, dataset,
     # check cv results
     i = 0
     train['pred_cv'] = None
+    features_array = []
+    pi = None
+    performance_cv = []
     for train_split, test_split in cv[1]:
         train[f'pred_cv_{i}'] = None
         # TODO prevent retraining
         model.fit(X_dummies_train.loc[train_split, :], y_train.loc[train_split])
         train.loc[test_split, f'pred_cv_{i}'] = model.predict(X_dummies_train.loc[test_split, :])
+        mape = mean_absolute_percentage_error(train.loc[test_split, target], train.loc[test_split, f'pred_cv_{i}'])
+
+        features = model.named_steps["regressor"].get_features()
+        features['fold'] = str(i)
+        features_array.append(features)
+
+        # TODO pi
+        if hasattr(model.named_steps["regressor"], 'predictions'):
+            pi = pi_coverage(train.loc[test_split, target],
+                                              model.named_steps["regressor"].predictions[['pi_upper', 'pi_lower']])
+
         train.loc[test_split, 'pred_cv'] = model.predict(X_dummies_train.loc[test_split, :])
+
+        performance_cv.append({
+            'mape': mape,
+            'pi': pi,
+            'fold': str(i),
+            'n': len(train_split),
+        })
+
         i += 1
+
 
     # fit model to train
     # print('Fitting to train')
     model.fit(X_dummies_train, y_train)
 
+    features = model.named_steps["regressor"].get_features()
+    features['fold'] = 'train'
+    features_array.append(features)
+
     # check performance on test dataset
     test['pred'] = model.predict(X_dummies_test)
     if hasattr(model.named_steps["regressor"], 'predictions'):
-        test['pi_lower'] = model.named_steps["regressor"].predictions['pi_lower']
-        test['pi_upper'] = model.named_steps["regressor"].predictions['pi_upper']
+        test['pi_lower'] = model.named_steps["regressor"].predictions['pi_lower'].values
+        test['pi_upper'] = model.named_steps["regressor"].predictions['pi_upper'].values
+        pi_coverage_test = pi_coverage(test[target], test[['pi_lower', 'pi_upper']])
     else:
         test['pi_lower'] = None
         test['pi_upper'] = None
@@ -168,19 +205,32 @@ def check_model(regressor, params, dataset,
     mae_test = mean_absolute_error(test[target], test['pred'])
     rmse_test = math.sqrt(mean_squared_error(test[target], test['pred']))
 
+    performance_cv.append({
+        'mape': mape_test,
+        'pi': pi_coverage_test,
+        'fold': 'train',
+        'n': X_dummies_train.shape[0],
+    })
+
     model_name = type(model.named_steps["regressor"]).__name__
     rejoined = plot_results(plotting, train, test, X_dummies_train, target, gs, model, model_name, i, mape_test)
 
+    performance_cv = pd.DataFrame(performance_cv)
+    performance_cv['model'] = model_name
+
     # TODO remove regressor_ from best_params
+    # choose measure to print on charts
 
     return {
         'model_name': type(pipeline.named_steps["regressor"]).__name__,
         'model': model,
-        'mape_cv': abs(gs.best_score_),
+        'performance_cv': performance_cv,
         'std_cv': pd.DataFrame(gs.cv_results_).sort_values('rank_test_score')['std_test_score'].values[0],
-        'performance_test': {'MAE': mae_test, 'MAPE': mape_test, 'RMSE': rmse_test},
+        'performance_test': {'MAE': mae_test, 'MAPE': mape_test, 'RMSE': rmse_test,
+                             'PI_COVERAGE': pi_coverage_test},
         'best_params': gs.best_params_,
         'cv_results': pd.DataFrame(gs.cv_results_),
         'rejoined': rejoined,
         'features': list(X_dummies.columns),
+        'features_importance': pd.concat(features_array),
     }

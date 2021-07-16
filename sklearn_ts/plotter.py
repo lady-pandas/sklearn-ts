@@ -1,8 +1,8 @@
 from matplotlib import pyplot as plt
 
 
-def pretty_plot(chart, save=False):
-    fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(10, 6))
+def pretty_plot(chart, save=False, **kwargs):
+    fig, ax = plt.subplots(nrows=1, ncols=1, **kwargs)
 
     chart(ax)
     ax.get_legend().remove()

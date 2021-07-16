@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 
 
 # list(X_dummies_train.columns)
-def plot_features(model, features):
+def plot_features(model, features, figsize=(20, 12)):
     model_name = type(model.named_steps["regressor"]).__name__
     features_df = None
 
@@ -24,7 +24,7 @@ def plot_features(model, features):
             'feature': features,
         })
 
-        fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(20, 12))
+        fig, ax = plt.subplots(nrows=1, ncols=1, figsize=figsize)
         features_df.sort_values('impact', ascending=True).plot.barh(x='feature', y='impact', ax=ax)
         fig.tight_layout(pad=4.0)
         fig.savefig(f'{model_name}_features.png')

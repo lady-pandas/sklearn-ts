@@ -48,6 +48,11 @@ results = check_model(
 
 | Model family | Model | Univariate |
 | ------------- |:-------------:| -----:|
+| Benchmark | Naive | 1 |
+| Exponential Smoothing | SES | 1 |
+| Exponential Smoothing | Holt's linear | 1 |
+| Exponential Smoothing | Holt-Winter | 1 |
+| - | Prophet |  |
 | Neural networks | ANN |  |
 | Neural networks | LSTM |  |
 | Neural networks | TCN |  |
@@ -57,42 +62,31 @@ Tutorial notebooks:
 - [neural networks](https://colab.research.google.com/drive/1wSZPydSkIoGYh9VANgP_wTQe-wrhzY1w#scrollTo=_W2QP0dhCKFV)
 
 # Development roadmap
-- FEATURES
-  
-
-- autoregressive generate
-- prophet features handling
-- model + forecast
+- TCN przewaga
+- Regularization
+- XGBoost drawing
+- FEATURES + SHAP
 - x13
 - prettier plot
-- feature importance prophet
-- wtorek - czy działa
-- alfabet
-- exp b -> r
-- huge past
-- usunąć printy
-- instrukcja
-- prerequisites
-- Outliers
-- Transform plots
-- High level summary 
 - Handling many observations per date
 - Constant window for forecasting
-- Image not included
 - For NN - chart of how it learned
 - Logging
 - Read the docs
-- CRISP
-- SHAP
 - prod
-- save picture optioal
-- not only mae
-- single or collective
-- memes
-- area plot
-- feature importances
-- watermark
-- spójnie - intuicja, wzory
-- ARIMA odpowiedniki e Exp
-- exp big letters
+- save picture optional
+- PI Coverage
+- Watermark
+- OLS pi
+- AIC / BIC
+penalizing coefficients / weights
+param vs hypreparams
+reg l1 l2, drop out, data augment, eartly stopping
 
+
+
+JOURNAL
+- pretty PI
+- decide which measure to show
+- those without features and pi still working
+- czasem się nie przelicza - co wtedy? Zliczać błędne / 100?
