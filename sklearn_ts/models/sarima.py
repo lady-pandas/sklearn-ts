@@ -6,7 +6,7 @@ from sklearn_ts.models.base import TimeSeriesModel
 import pandas as pd
 
 
-class SARIMAXModel(BaseEstimator, RegressorMixin, TimeSeriesModel):
+class SARIMAXTimeSeriesModel(BaseEstimator, RegressorMixin, TimeSeriesModel):
     # https://www.statsmodels.org/dev/generated/statsmodels.tsa.statespace.sarimax.SARIMAX.html
 
     def __init__(self, coverage=0.9, order=(1, 0, 0), seasonal_order=(0, 0, 0, 0), exog=None,
@@ -24,10 +24,7 @@ class SARIMAXModel(BaseEstimator, RegressorMixin, TimeSeriesModel):
         model = SARIMAX(endog=y,
                         order=self.order, seasonal_order=self.seasonal_order,
                         exog=self.exog, trend=self.trend)
-        try:
-            model_fit = model.fit(disp=False)
-        except Exception as e:
-            print(e) #LinAlgError
+        model_fit = model.fit(disp=False)
         self.model = model_fit
         return self
 

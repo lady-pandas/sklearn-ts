@@ -1,7 +1,7 @@
-from fbprophet import Prophet
-from sklearn.base import BaseEstimator, RegressorMixin
-from fbprophet.utilities import regressor_coefficients
 import pandas as pd
+from fbprophet import Prophet
+from fbprophet.utilities import regressor_coefficients
+from sklearn.base import BaseEstimator, RegressorMixin
 
 from sklearn_ts.models.base import TimeSeriesModel
 
@@ -27,14 +27,13 @@ class ProphetModel(BaseEstimator, RegressorMixin, TimeSeriesModel):
         df['y'] = y.values
 
         m = Prophet(**self.kwargs)
+
         for regressor in self.regressors:
             m.add_regressor(regressor)
+
         m.fit(df)
 
         self.model = m
-        if len(self.regressors) > 1:
-            self.feature_importances_ = [None] + regressor_coefficients(m)['coef'].tolist()  # place for date
-
         return self
 
     def predict(self, X):
@@ -51,7 +50,14 @@ class ProphetModel(BaseEstimator, RegressorMixin, TimeSeriesModel):
             **self.kwargs
         }
 
-    # def set_params(self, **parameters):
-    #     for parameter, value in parameters.items():
-    #         setattr(self, parameter, value)
-    #     return self
+    def set_params(self, **parameters):
+        for parameter, value in parameters.items():
+            setattr(self, parameter, value)
+        return self
+
+    def get_features(self):
+        if len(self.regressors) > 1:
+            return pd.DataFrame({
+                'impact': regressor_coefficients(self.model)['coef'].tolist(),
+                'feature': self.features[1:],  # first one is date
+            })

@@ -43,16 +43,16 @@ def mean_absolute_percentage_error(y_true, y_pred, zeros_strategy='mae'):
     return np.mean(ape)
 
 
-def plot_results(plotting, train, test, X_dummies_train, target, gs, model, model_name, i, mape_test):
+def plot_results(plotting, measure_to_plot, train, test, X_dummies_train, target, gs, model, model_name, i, measures):
     if plotting:
         fig, axes = plt.subplots(nrows=2, ncols=2, figsize=(20, 12))
 
         # CV errors
         pred_cv_features = [f'pred_cv_{j}' for j in range(i)]
-        mae_cv = abs(gs.best_score_)
+        mae_cv = measures.loc[~measures['fold'].isin(['test', 'train']), measure_to_plot].mean()
         subset_cv = train.loc[train['pred_cv'].notnull(), [target] + pred_cv_features]
         subset_cv.plot(y=[target] + pred_cv_features,
-                       title='CV MAPE: {0:.0%}'.format(mae_cv), ax=axes[0][0])
+                       title=f'CV {measure_to_plot.upper()}: {mae_cv: .00%}', ax=axes[0][0])
 
         # Train errors:
         train['pred'] = model.predict(X_dummies_train)
@@ -63,21 +63,22 @@ def plot_results(plotting, train, test, X_dummies_train, target, gs, model, mode
         train['error'] = train[target] - train['pred_cv']
 
         is_normal = normality(train['error'][train['error'].notnull()].astype(float))['normal'].iloc[0]
-        train['error'].plot.hist(ax=axes[0][1], title=f'{is_normal}')
-
+        train['error'].plot.hist(ax=axes[0][1], title=f'NORMAL: {"True" if is_normal else "False"}')
 
         # Test errors zoomed
+        mape_test = measures.loc[measures['fold'].isin(['test']), measure_to_plot].mean()
+
         subset_test = test[[target, 'pred', 'pi_lower', 'pi_upper']]
         subset_test.plot(y=[target, 'pred'],
-                         title='Testing MAPE: {0:.0%}'.format(mape_test), ax=axes[1][0])
+                         title=f'Test {measure_to_plot.upper()}: {mape_test:.00%}', ax=axes[1][0])
         (axes[1][0]).fill_between(x=test.index, y1=test['pi_lower'],
-                         y2=test['pi_upper'], zorder=3, color='grey', alpha=0.2)
+                                  y2=test['pi_upper'], zorder=3, color='grey', alpha=0.2)
 
         # Test errors
         rejoined = subset_train.rename(columns={target: 'train'})[['train']].join(
             subset_test.rename(columns={target: 'test'})[['test', 'pred', 'pi_lower', 'pi_upper']], how='outer')
         rejoined.plot(y=['train', 'pred', 'test'],
-                      title='Testing MAPE: {0:.0%}'.format(mape_test), ax=axes[1][1])
+                      title=f'Test {measure_to_plot.upper()}: {mape_test:.00%}', ax=axes[1][1])
 
         for ax_sub in axes:
             for ax in ax_sub:
@@ -102,7 +103,7 @@ def plot_results(plotting, train, test, X_dummies_train, target, gs, model, mode
 def check_model(regressor, params, dataset,
                 target='new_cases', features=['date'], categorical_features=[], user_transformers=[],
                 h=14, n_splits=5, gap=14,
-                plotting=True
+                plotting=True, measure_to_plot='pi',
                 ):
     """
     Check model
@@ -153,7 +154,7 @@ def check_model(regressor, params, dataset,
     model = gs.best_estimator_
 
     # check cv results
-    i = 0
+    i = n_splits
     train['pred_cv'] = None
     features_array = []
     pi = None
@@ -166,13 +167,16 @@ def check_model(regressor, params, dataset,
         mape = mean_absolute_percentage_error(train.loc[test_split, target], train.loc[test_split, f'pred_cv_{i}'])
 
         features = model.named_steps["regressor"].get_features()
-        features['fold'] = str(i)
-        features_array.append(features)
+        if features is not None:
+            features['fold'] = str(i)
+            features['model'] = type(model.named_steps["regressor"]).__name__
+            features['n'] = len(train_split)
+            features_array.append(features)
 
         # TODO pi
         if hasattr(model.named_steps["regressor"], 'predictions'):
             pi = pi_coverage(train.loc[test_split, target],
-                                              model.named_steps["regressor"].predictions[['pi_upper', 'pi_lower']])
+                             model.named_steps["regressor"].predictions[['pi_upper', 'pi_lower']])
 
         train.loc[test_split, 'pred_cv'] = model.predict(X_dummies_train.loc[test_split, :])
 
@@ -183,16 +187,18 @@ def check_model(regressor, params, dataset,
             'n': len(train_split),
         })
 
-        i += 1
-
+        i -= 1
 
     # fit model to train
     # print('Fitting to train')
     model.fit(X_dummies_train, y_train)
 
     features = model.named_steps["regressor"].get_features()
-    features['fold'] = 'train'
-    features_array.append(features)
+    if features is not None:
+        features['fold'] = 'test'
+        features['model'] = type(model.named_steps["regressor"]).__name__
+        features['n'] = X_dummies_train.shape[0]
+        features_array.append(features)
 
     # check performance on test dataset
     test['pred'] = model.predict(X_dummies_test)
@@ -211,15 +217,16 @@ def check_model(regressor, params, dataset,
     performance_cv.append({
         'mape': mape_test,
         'pi': pi_coverage_test,
-        'fold': 'train',
+        'fold': 'test',
         'n': X_dummies_train.shape[0],
     })
 
     model_name = type(model.named_steps["regressor"]).__name__
-    rejoined = plot_results(plotting, train, test, X_dummies_train, target, gs, model, model_name, i, mape_test)
-
     performance_cv = pd.DataFrame(performance_cv)
     performance_cv['model'] = model_name
+
+    rejoined = plot_results(plotting, measure_to_plot, train, test, X_dummies_train, target, gs, model, model_name, i,
+                            performance_cv)
 
     # TODO remove regressor_ from best_params
     # choose measure to print on charts
@@ -235,5 +242,5 @@ def check_model(regressor, params, dataset,
         'cv_results': pd.DataFrame(gs.cv_results_),
         'rejoined': rejoined,
         'features': list(X_dummies.columns),
-        'features_importance': pd.concat(features_array),
+        'features_importance': pd.concat(features_array) if len(features_array) > 0 else pd.DataFrame(),
     }

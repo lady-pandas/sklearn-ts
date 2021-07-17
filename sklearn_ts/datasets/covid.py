@@ -1,11 +1,4 @@
 import pandas as pd
-from statsmodels.tsa.arima_process import arma_generate_sample
-
-
-def generate_arma_dataset(level, **kwargs):
-    kwargs['ar'] = [1] + [-el for el in kwargs['ar']]
-    kwargs['ma'] = [1] + kwargs['ma']
-    return pd.DataFrame({'y': arma_generate_sample(**kwargs) + level})
 
 
 def load_covid():

@@ -86,7 +86,6 @@ reg l1 l2, drop out, data augment, eartly stopping
 
 
 JOURNAL
-- pretty PI
 - decide which measure to show
 - those without features and pi still working
 - czasem się nie przelicza - co wtedy? Zliczać błędne / 100?
