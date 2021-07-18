@@ -1,5 +1,7 @@
 from sklearn.base import BaseEstimator, RegressorMixin
 import numpy as np
+from sklearn.exceptions import ConvergenceWarning
+from statsmodels.tools.sm_exceptions import ValueWarning
 from statsmodels.tsa.statespace.sarimax import SARIMAX
 
 from sklearn_ts.models.base import TimeSeriesModel
@@ -24,8 +26,18 @@ class SARIMAXTimeSeriesModel(BaseEstimator, RegressorMixin, TimeSeriesModel):
         model = SARIMAX(endog=y,
                         order=self.order, seasonal_order=self.seasonal_order,
                         exog=self.exog, trend=self.trend)
+
         model_fit = model.fit(disp=False)
-        self.model = model_fit
+
+        if model_fit.mle_retvals['converged']:
+            self.model = model_fit
+        else:
+            model_fit = model.fit(disp=False, maxiter=200)
+            if model_fit.mle_retvals['converged']:
+                self.model = model_fit
+            else:
+                raise Exception("Convergence problem")
+
         return self
 
     def predict(self, X):

@@ -96,7 +96,7 @@ def plot_results(plotting, measure_to_plot, train, test, X_dummies_train, target
         # fig.tight_layout(pad=4.0)
         # fig.savefig(f'{model_name}_prediction.png')
 
-        return rejoined
+        return rejoined, is_normal
 
 
 # noinspection PyDefaultArgument
@@ -162,6 +162,8 @@ def check_model(regressor, params, dataset,
     for train_split, test_split in cv[1]:
         train[f'pred_cv_{i}'] = None
         # TODO prevent retraining
+        is_normal = normality(train.loc[train_split, target] - model.predict(X_dummies_train.loc[train_split, :]))['normal'].iloc[0]
+
         model.fit(X_dummies_train.loc[train_split, :], y_train.loc[train_split])
         train.loc[test_split, f'pred_cv_{i}'] = model.predict(X_dummies_train.loc[test_split, :])
         mape = mean_absolute_percentage_error(train.loc[test_split, target], train.loc[test_split, f'pred_cv_{i}'])
@@ -185,6 +187,7 @@ def check_model(regressor, params, dataset,
             'pi': pi,
             'fold': str(i),
             'n': len(train_split),
+            'is_normal': is_normal,
         })
 
         i -= 1
@@ -213,19 +216,21 @@ def check_model(regressor, params, dataset,
     mape_test = mean_absolute_percentage_error(test[target], test['pred'])
     mae_test = mean_absolute_error(test[target], test['pred'])
     rmse_test = math.sqrt(mean_squared_error(test[target], test['pred']))
+    is_normal = normality(train[target] - model.predict(X_dummies_train))['normal'].iloc[0]
 
     performance_cv.append({
         'mape': mape_test,
         'pi': pi_coverage_test,
         'fold': 'test',
         'n': X_dummies_train.shape[0],
+        'is_normal': is_normal,
     })
 
     model_name = type(model.named_steps["regressor"]).__name__
     performance_cv = pd.DataFrame(performance_cv)
     performance_cv['model'] = model_name
 
-    rejoined = plot_results(plotting, measure_to_plot, train, test, X_dummies_train, target, gs, model, model_name, i,
+    rejoined, is_normal = plot_results(plotting, measure_to_plot, train, test, X_dummies_train, target, gs, model, model_name, i,
                             performance_cv)
 
     # TODO remove regressor_ from best_params

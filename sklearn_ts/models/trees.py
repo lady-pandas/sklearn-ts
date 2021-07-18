@@ -30,7 +30,7 @@ class RandomForestTimeSeriesModel(BaseEstimator, RegressorMixin, TimeSeriesModel
     def fit(self, X, y):
         model = RandomForestRegressor(
             n_estimators=self.n_estimators, criterion=self.criterion,
-            max_depth=self.max_depth, min_samples_leaf=self.min_samples_leaf, random_state=self.random_state)
+            max_depth=self.max_depth, min_samples_leaf=self.min_samples_leaf, random_state=self.random_state, oob_score=True)
         model.fit(X, y)
         self.model = model
 
@@ -45,7 +45,7 @@ class RandomForestTimeSeriesModel(BaseEstimator, RegressorMixin, TimeSeriesModel
                 model.fit(X, y)
                 self.models.append(model)
         else:
-            predictions = self.model.predict(X)
+            predictions = self.model.oob_prediction_
             self.residuals = predictions - y
 
         return self

@@ -82,10 +82,11 @@ Tutorial notebooks:
 penalizing coefficients / weights
 param vs hypreparams
 reg l1 l2, drop out, data augment, eartly stopping
-
+- one step ahead forecast and again forecast etc
 
 
 JOURNAL
+- residuals normality as part of performance evaluation
 - decide which measure to show
 - those without features and pi still working
 - czasem się nie przelicza - co wtedy? Zliczać błędne / 100?

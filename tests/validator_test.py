@@ -33,8 +33,8 @@ class ValidatorTestCase(unittest.TestCase):
         self.assertEqual(len(results.keys()), 10)
 
     def test_sarimax(self):
-        dataset = pd.read_parquet('sarima.parquet')
-        dataset = dataset[(dataset['distr'] == 'normal') & (dataset['mc'] == 0)]
+        dataset = pd.read_parquet('../sklearn_ts/research/sarima_AR.parquet')
+        dataset = dataset[(dataset['distr'] == 'normal') & (dataset['mc'] == 0) & (dataset['batch'] == 'daily_7ahead')]
         dataset.index = dataset['date']
 
         params = {'coverage': [0.8], 'order': [(7, 0, 0)], 'seasonal_order': [(0, 0, 0, 0)]}

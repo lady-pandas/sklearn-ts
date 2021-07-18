@@ -11,11 +11,15 @@ DEGREES = 2.1
 
 
 def normal(size):
-    return np.random.normal(loc=0.0, scale=math.sqrt(DEGREES/(DEGREES-1)), size=size)
+    return np.random.normal(loc=0.0, scale=math.sqrt(DEGREES/(DEGREES-2)), size=size)
 
 
 def tstud_finite(size):
     return t.rvs(DEGREES, size=size)
+
+
+def tstud_infinite(size):
+    return t.rvs(1, size=size)
 
 
 def generate_one_arma_dataset(level, freq='D', **kwargs):
@@ -28,19 +32,43 @@ def generate_one_arma_dataset(level, freq='D', **kwargs):
     return dataset
 
 
-def generate_multiple_arma_datasets(MC, level, freq, **kwargs):
+def generate_multiple_arma_datasets(name, MC, details):
     ts_array = []
     i = 0
-    for mc in range(MC):
-        for distr in [normal, tstud_finite]:
-            ts = generate_one_arma_dataset(level, freq=freq, distrvs=distr, **kwargs)
-            ts['distr'] = distr.__name__
-            ts['mc'] = mc
-            ts['id'] = i
-            ts_array.append(ts)
+    for key, value in details.items():
+        print(key, value)
+        # read params
+        level = value['level']
+        freq = value['freq']
+        nsample = value['nsample']
+        ar = value['ar']
+        ma = value['ma']
 
-            i += 1
+        for distr in [normal, tstud_finite, tstud_infinite]:
+            print(freq, level, distr)
+
+            for mc in range(MC):
+                ts = generate_one_arma_dataset(level, freq=freq, distrvs=distr,
+                                               nsample=nsample, ar=ar, ma=ma)
+                ts['distr'] = distr.__name__
+                ts['mc'] = mc
+                ts['id'] = i
+
+                ts['batch'] = key
+                ts['level'] = level
+                ts['freq'] = freq
+                ts['nsample'] = nsample
+                ts['ar'] = ','.join([str(el) for el in ar])
+                ts['ma'] = ','.join([str(el) for el in ma])
+
+                ts_array.append(ts)
+
+                i += 1
+
+        datasets = pd.concat(ts_array)
+        datasets.to_parquet(f'sarima_{name}.parquet')
 
     datasets = pd.concat(ts_array)
-    datasets.to_parquet(f'sarima_level{level}.parquet')
+    datasets.to_parquet(f'sarima_{name}.parquet')
+    #pd.read_parquet(f'sarima_AR.parquet')
     return datasets

@@ -4,3 +4,4 @@ build/
 *.bat
 /sklearn_ts.egg-info/
 *.png
+*.pyc
