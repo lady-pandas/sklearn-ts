@@ -16,7 +16,7 @@ def run_model(dataset, params, regressor, name, h, n_splits, gap, lags, features
     else:
         features_list = []
         for lag in lags:
-            dataset[f'lag_{lag}'] = dataset['y'].shift(lag)
+            dataset[f'lag_{lag}'] = dataset['y'].shift(lag).fillna(0)
             features_list.append(f'lag_{lag}')
 
     try:
@@ -43,18 +43,24 @@ def run_model(dataset, params, regressor, name, h, n_splits, gap, lags, features
 
 
 
-datasets = pd.read_parquet(f'sarima_AR.parquet')
+datasets = pd.read_parquet(f'sarima_AR_daily2.parquet')
 
 features_array = []
 performance_array = []
 errors_array = []
 
 details = {
+    'daily_7ahead2': {'order': (0, 0, 0), 'seasonal_order': (1, 0, 0, 7), 'trend': [1], 'lags': [7],
+                     'h': 7, 'n_splits': 12, 'gap': 60, 'coverage': 0.8},
+
     'daily_7ahead': {'order': (0, 0, 0), 'seasonal_order': (1, 0, 0, 7), 'trend': [1], 'lags': [7],
                      'h': 7, 'n_splits': 12, 'gap': 60, 'coverage': 0.8},
 
-    'monthly_1ahead': {'order': (4, 0, 0), 'seasonal_order': (2, 0, 0, 12), 'trend': [1], 'lags': [3, 4, 12, 24],
-                       'h': 1, 'n_splits': 20, 'gap': 3, 'coverage': 0.8},
+    'monthly_3ahead': {'order': (5, 0, 0), 'seasonal_order': (1, 0, 0, 12), 'trend': [1], 'lags': [3, 4, 5, 12],
+                       'h': 3, 'n_splits': 18, 'gap': 3, 'coverage': 0.8},
+
+    'monthly5_3ahead': {'order': (5, 0, 0), 'seasonal_order': (0, 0, 0, 0), 'trend': [1], 'lags': [3, 4, 5],
+                       'h': 3, 'n_splits': 15, 'gap': 9, 'coverage': 0.8},
 }
 
 for i in datasets['id'].unique():
@@ -63,6 +69,8 @@ for i in datasets['id'].unique():
     dataset = datasets[datasets['id'] == i].copy()
     config = details[dataset['batch'].max()]
     print(dataset['batch'].max())
+    if dataset['batch'].max()=='daily_7ahead':
+        continue
 
     params = {'coverage': [config['coverage']], 'order': [config['order']],
               'seasonal_order': [config['seasonal_order']], 'trend': [config['trend']]}
@@ -79,6 +87,6 @@ for i in datasets['id'].unique():
 
     print('done')
 
-pd.concat(features_array).to_parquet('features.parquet')
-pd.concat(performance_array).to_parquet('performance.parquet')
-pd.DataFrame(errors_array).to_parquet('errors.parquet')
+pd.concat(features_array).to_parquet('features4.parquet')
+pd.concat(performance_array).to_parquet('performance4.parquet')
+pd.DataFrame(errors_array).to_parquet('errors4.parquet')

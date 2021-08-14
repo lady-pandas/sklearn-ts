@@ -1,3 +1,4 @@
+from numpy.linalg import LinAlgError
 from sklearn.base import BaseEstimator, RegressorMixin
 import numpy as np
 from sklearn.exceptions import ConvergenceWarning
@@ -27,16 +28,21 @@ class SARIMAXTimeSeriesModel(BaseEstimator, RegressorMixin, TimeSeriesModel):
                         order=self.order, seasonal_order=self.seasonal_order,
                         exog=self.exog, trend=self.trend)
 
-        model_fit = model.fit(disp=False)
-
-        if model_fit.mle_retvals['converged']:
-            self.model = model_fit
-        else:
+        try:
             model_fit = model.fit(disp=False, maxiter=200)
-            if model_fit.mle_retvals['converged']:
-                self.model = model_fit
-            else:
-                raise Exception("Convergence problem")
+        except LinAlgError as e:
+            model_fit = model.fit(disp=False, maxiter=200,  initialization='approximate_diffuse')
+
+        self.model = model_fit
+
+        # if model_fit.mle_retvals['converged']:
+        #     self.model = model_fit
+        # else:
+        #     model_fit = model.fit(disp=False, maxiter=200)
+        #     if model_fit.mle_retvals['converged']:
+        #         self.model = model_fit
+        #     #else:
+        #     #    raise Exception("Convergence problem")
 
         return self
 
@@ -59,5 +65,5 @@ class SARIMAXTimeSeriesModel(BaseEstimator, RegressorMixin, TimeSeriesModel):
         return self
 
     def get_features(self):
-        return pd.DataFrame(self.model.params).reset_index().\
-            rename(columns={'index': 'feature', 0: 'impact'})
+        return pd.concat([pd.DataFrame(self.model.params).reset_index().\
+            rename(columns={'index': 'feature', 0: 'impact'}), pd.DataFrame({'feature': ['converedg'], 'impact': [int(self.model.mle_retvals['converged'])]})])

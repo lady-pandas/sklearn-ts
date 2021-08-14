@@ -83,9 +83,16 @@ penalizing coefficients / weights
 param vs hypreparams
 reg l1 l2, drop out, data augment, eartly stopping
 - one step ahead forecast and again forecast etc
-
+- pi for prophet - explaining how they are formulated
+- tcn missing arrow
+- tcn details
+- t-test
+- iterative one step ahead
 
 JOURNAL
+- daily but complicated
+-mae
+  
 - residuals normality as part of performance evaluation
 - decide which measure to show
 - those without features and pi still working

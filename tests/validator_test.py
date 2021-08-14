@@ -16,8 +16,9 @@ from sklearn_ts.validator import check_model
 class ValidatorTestCase(unittest.TestCase):
 
     def test_rf(self):
-        dataset = pd.read_parquet('sarima.parquet')
-        dataset = dataset[(dataset['distr'] == 'tstud_finite') & (dataset['mc'] == 0)]
+        dataset = pd.read_parquet('../tests/sarima_AR5_monthly.parquet')
+        dataset = dataset[(dataset['distr'] == 'normal') & (dataset['mc'] == 0) & (dataset['batch'] == 'monthly5_3ahead')]
+        dataset.index = dataset['date']
         dataset['lag'] = dataset['y'].shift(7)
 
         params = {'coverage': [0.9], 'features': [['lag']]}
@@ -26,24 +27,24 @@ class ValidatorTestCase(unittest.TestCase):
         results = check_model(
             regressor, params, dataset,
             target='y', features=['lag'], categorical_features=[], user_transformers=[],
-            h=7, n_splits=11, gap=60,
+            h=3, n_splits=10, gap=6,
             plotting=True
         )
 
         self.assertEqual(len(results.keys()), 10)
 
     def test_sarimax(self):
-        dataset = pd.read_parquet('../sklearn_ts/research/sarima_AR.parquet')
+        dataset = pd.read_parquet('../tests/sarima_AR.parquet')
         dataset = dataset[(dataset['distr'] == 'normal') & (dataset['mc'] == 0) & (dataset['batch'] == 'daily_7ahead')]
         dataset.index = dataset['date']
 
-        params = {'coverage': [0.8], 'order': [(7, 0, 0)], 'seasonal_order': [(0, 0, 0, 0)]}
+        params = {'coverage': [0.8], 'order': [(0, 0, 0)], 'seasonal_order': [(1, 0, 0, 7)], 'trend': [[1]]}
         regressor = SARIMAXTimeSeriesModel()
 
         results = check_model(
             regressor, params, dataset,
             target='y', features=['date'], categorical_features=[], user_transformers=[],
-            h=7, n_splits=12, gap=60,
+            h=7, n_splits=12, gap=7,
             plotting=True
         )
 

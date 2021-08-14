@@ -19,7 +19,7 @@ def tstud_finite(size):
 
 
 def tstud_infinite(size):
-    return t.rvs(1, size=size)
+    return t.rvs(1.1, size=size)
 
 
 def generate_one_arma_dataset(level, freq='D', **kwargs):
@@ -52,7 +52,7 @@ def generate_multiple_arma_datasets(name, MC, details):
                                                nsample=nsample, ar=ar, ma=ma)
                 ts['distr'] = distr.__name__
                 ts['mc'] = mc
-                ts['id'] = i
+                ts['id'] = f'{name}_{i}'
 
                 ts['batch'] = key
                 ts['level'] = level

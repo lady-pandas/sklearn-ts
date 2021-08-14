@@ -48,7 +48,7 @@ def plot_results(plotting, measure_to_plot, train, test, X_dummies_train, target
         fig, axes = plt.subplots(nrows=2, ncols=2, figsize=(20, 12))
 
         # CV errors
-        pred_cv_features = [f'pred_cv_{j}' for j in range(i)]
+        pred_cv_features = [f'pred_cv_{j}' for j in range(1, i+1)]
         mae_cv = measures.loc[~measures['fold'].isin(['test', 'train']), measure_to_plot].mean()
         subset_cv = train.loc[train['pred_cv'].notnull(), [target] + pred_cv_features]
         subset_cv.plot(y=[target] + pred_cv_features,
@@ -162,9 +162,11 @@ def check_model(regressor, params, dataset,
     for train_split, test_split in cv[1]:
         train[f'pred_cv_{i}'] = None
         # TODO prevent retraining
-        is_normal = normality(train.loc[train_split, target] - model.predict(X_dummies_train.loc[train_split, :]))['normal'].iloc[0]
 
         model.fit(X_dummies_train.loc[train_split, :], y_train.loc[train_split])
+        is_normal = \
+        normality(train.loc[train_split, target] - model.predict(X_dummies_train.loc[train_split, :]))['normal'].iloc[0]
+
         train.loc[test_split, f'pred_cv_{i}'] = model.predict(X_dummies_train.loc[test_split, :])
         mape = mean_absolute_percentage_error(train.loc[test_split, target], train.loc[test_split, f'pred_cv_{i}'])
 
@@ -230,7 +232,7 @@ def check_model(regressor, params, dataset,
     performance_cv = pd.DataFrame(performance_cv)
     performance_cv['model'] = model_name
 
-    rejoined, is_normal = plot_results(plotting, measure_to_plot, train, test, X_dummies_train, target, gs, model, model_name, i,
+    rejoined, is_normal = plot_results(plotting, measure_to_plot, train, test, X_dummies_train, target, gs, model, model_name, n_splits,
                             performance_cv)
 
     # TODO remove regressor_ from best_params
